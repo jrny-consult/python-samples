@@ -41,35 +41,35 @@ def image_merging(template_presentation_id,
         customer_graphic_url = image_url
 
         # Duplicate the template presentation using the Drive API.
-        copy_title = customer_name + ' presentation'
+        copy_title = f'{customer_name} presentation'
         drive_response = drive_service.files().copy(
             fileId=template_presentation_id,
             body={'name': copy_title}).execute()
         presentation_copy_id = drive_response.get('id')
 
         # Create the image merge (replaceAllShapesWithImage) requests.
-        requests = []
-        requests.append({
-            'replaceAllShapesWithImage': {
-                'imageUrl': logo_url,
-                'replaceMethod': 'CENTER_INSIDE',
-                'containsText': {
-                    'text': '{{company-logo}}',
-                    'matchCase': True
+        requests = [
+            {
+                'replaceAllShapesWithImage': {
+                    'imageUrl': logo_url,
+                    'replaceMethod': 'CENTER_INSIDE',
+                    'containsText': {
+                        'text': '{{company-logo}}',
+                        'matchCase': True,
+                    },
                 }
-            }
-        })
-        requests.append({
-            'replaceAllShapesWithImage': {
-                'imageUrl': customer_graphic_url,
-                'replaceMethod': 'CENTER_INSIDE',
-                'containsText': {
-                    'text': '{{customer-graphic}}',
-                    'matchCase': True
+            },
+            {
+                'replaceAllShapesWithImage': {
+                    'imageUrl': customer_graphic_url,
+                    'replaceMethod': 'CENTER_INSIDE',
+                    'containsText': {
+                        'text': '{{customer-graphic}}',
+                        'matchCase': True,
+                    },
                 }
-            }
-        })
-
+            },
+        ]
         # Execute the requests.
         body = {
             'requests': requests
@@ -77,17 +77,11 @@ def image_merging(template_presentation_id,
         response = slides_service.presentations().batchUpdate(
             presentationId=presentation_copy_id, body=body).execute()
 
-        # Count the number of replacements made.
-        num_replacements = 0
-
-        for reply in response.get('replies'):
-            # add below line
-
-            if reply.get('occurrencesChanged') is not None:
-                # end tag
-                num_replacements += reply.get('replaceAllShapesWithImage') \
-                    .get('occurrencesChanged')
-
+        num_replacements = sum(
+            reply.get('replaceAllShapesWithImage').get('occurrencesChanged')
+            for reply in response.get('replies')
+            if reply.get('occurrencesChanged') is not None
+        )
         print(f"Created merged presentation with ID:"
               f"{presentation_copy_id}")
         print(f"Replaced {num_replacements} shapes with images")

@@ -37,11 +37,11 @@ class TestTextMerging(BaseTest):
         self.assertIsNotNone(presentation_id, msg=pformat(response))
         self.assertEqual(2, len(response.get('replies')),
                          msg=pformat(response))
-        num_replacements = 0
-        for reply in response.get('replies'):
-            if isinstance(reply, int):
-                num_replacements += reply.get('replaceAllShapesWithImage') \
-                    .get('occurrencesChanged')
+        num_replacements = sum(
+            reply.get('replaceAllShapesWithImage').get('occurrencesChanged')
+            for reply in response.get('replies')
+            if isinstance(reply, int)
+        )
 
 
 if __name__ == "__main__":
